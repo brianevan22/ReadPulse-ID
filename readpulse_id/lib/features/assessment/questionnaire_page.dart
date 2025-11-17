@@ -40,22 +40,22 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
         _readingHabitDuration == null ||
         _discussionHabit == null ||
         _readingCommunity == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Harap diisi semua')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Harap diisi semua')));
       return;
     }
 
     final response = ReadingResponse(
       frequencyPerWeek: _frequencyPerWeek!, // 0..4
-      minutesPerDay: _minutesPerDay!,       // 0..4
-      enjoymentScale: _enjoymentScale!,     // 0..4
+      minutesPerDay: _minutesPerDay!, // 0..4
+      enjoymentScale: _enjoymentScale!, // 0..4
       hasPersonalBooks: _hasPersonalBooks!, // 0..1
       formatPreference: _formatPreference!, // 0..3
-      genreVariety: _genreVariety!,         // 0..4
-      purpose: _purpose!,                   // 0..3
+      genreVariety: _genreVariety!, // 0..4
+      purpose: _purpose!, // 0..3
       readingHabitDuration: _readingHabitDuration!, //0..4
-      discussionHabit: _discussionHabit!,   //0..3
+      discussionHabit: _discussionHabit!, //0..3
       readingCommunity: _readingCommunity!, //0..3
     );
 
@@ -100,9 +100,9 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Terjadi error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Terjadi error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -127,15 +127,18 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
 
               // 1. Frekuensi membaca per minggu
               const Text(
-                '1. Dalam 1 minggu, berapa kali kamu membaca (buku/artikel/ebook)?',
+                '1. Dalam 1 minggu, berapa kali kamu membaca (buku/artikel/ebook/dsb)?',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              ...List.generate(5, (i) => RadioListTile<int>(
-                title: Text('$i kali/minggu'),
-                value: i,
-                groupValue: _frequencyPerWeek,
-                onChanged: (v) => setState(() => _frequencyPerWeek = v),
-              )),
+              ...List.generate(
+                5,
+                (i) => RadioListTile<int>(
+                  title: Text('$i kali/minggu'),
+                  value: i,
+                  groupValue: _frequencyPerWeek,
+                  onChanged: (v) => setState(() => _frequencyPerWeek = v),
+                ),
+              ),
               const SizedBox(height: 16),
 
               // 2. Menit membaca per hari
@@ -143,12 +146,15 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                 '2. Rata-rata berapa menit per hari kamu membaca?',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              ...List.generate(5, (i) => RadioListTile<int>(
-                title: Text('${i * 30} menit/hari'),
-                value: i,
-                groupValue: _minutesPerDay,
-                onChanged: (val) => setState(() => _minutesPerDay = val),
-              )),
+              ...List.generate(
+                5,
+                (i) => RadioListTile<int>(
+                  title: Text('${i * 30} menit/hari'),
+                  value: i,
+                  groupValue: _minutesPerDay,
+                  onChanged: (val) => setState(() => _minutesPerDay = val),
+                ),
+              ),
               const SizedBox(height: 16),
 
               // 3. Seberapa menikmati membaca
@@ -156,12 +162,15 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                 '3. Seberapa kamu menikmati aktivitas membaca?',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              ...List.generate(5, (i) => RadioListTile<int>(
-                title: Text('${i + 1} (${_enjoymentLabel(i + 1)})'),
-                value: i + 1,
-                groupValue: _enjoymentScale,
-                onChanged: (v) => setState(() => _enjoymentScale = v),
-              )),
+              ...List.generate(
+                5,
+                (i) => RadioListTile<int>(
+                  title: Text('${i + 1} (${_enjoymentLabel(i + 1)})'),
+                  value: i + 1,
+                  groupValue: _enjoymentScale,
+                  onChanged: (v) => setState(() => _enjoymentScale = v),
+                ),
+              ),
               const SizedBox(height: 16),
 
               // 4. Punya koleksi buku?
@@ -177,7 +186,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
               ),
               RadioListTile<int>(
                 title: const Text('Ya'),
-                value: 1,
+                value: 2,
                 groupValue: _hasPersonalBooks,
                 onChanged: (v) => setState(() => _hasPersonalBooks = v),
               ),
@@ -190,25 +199,25 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
               ),
               RadioListTile<int>(
                 title: const Text('Digital (HP/Tablet/Komputer)'),
-                value: 0,
-                groupValue: _formatPreference,
-                onChanged: (v) => setState(() => _formatPreference = v),
-              ),
-              RadioListTile<int>(
-                title: const Text('Cetak (buku/majalah fisik)'),
                 value: 1,
                 groupValue: _formatPreference,
                 onChanged: (v) => setState(() => _formatPreference = v),
               ),
               RadioListTile<int>(
-                title: const Text('Keduanya sama-sama suka'),
+                title: const Text('Cetak (buku/majalah fisik/koran)'),
                 value: 2,
                 groupValue: _formatPreference,
                 onChanged: (v) => setState(() => _formatPreference = v),
               ),
               RadioListTile<int>(
-                title: const Text('Tidak suka keduanya'),
+                title: const Text('Keduanya sama-sama suka'),
                 value: 3,
+                groupValue: _formatPreference,
+                onChanged: (v) => setState(() => _formatPreference = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Tidak suka keduanya'),
+                value: 0,
                 groupValue: _formatPreference,
                 onChanged: (v) => setState(() => _formatPreference = v),
               ),
@@ -219,40 +228,49 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                 '6. Kira-kira ada berapa banyak variasi jenis bacaan yang biasa kamu baca? (misal: komik, novel, non-fiksi, berita, artikel, dsb.)',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              ...List.generate(5, (i) => RadioListTile<int>(
-                title: Text(i == 0 ? '0 jenis bacaan (tidak pernah)' : '$i jenis bacaan'),
-                value: i,
-                groupValue: _genreVariety,
-                onChanged: (v) => setState(() => _genreVariety = v),
-              )),
+              ...List.generate(
+                5,
+                (i) => RadioListTile<int>(
+                  title: Text(
+                    i == 0
+                        ? '0 jenis bacaan (tidak pernah)'
+                        : '$i jenis bacaan',
+                  ),
+                  value: i,
+                  groupValue: _genreVariety,
+                  onChanged: (v) => setState(() => _genreVariety = v),
+                ),
+              ),
               const SizedBox(height: 16),
 
               // 7. Tujuan utama membaca
               const Text(
-                '7. Kamu lebih sering membaca untuk apa?',
+                '7. Kamu lebih sering membaca untuk keperluan apa?',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               RadioListTile<int>(
                 title: const Text('Tugas/sekolah/kuliah/kerja'),
-                value: 0,
-                groupValue: _purpose,
-                onChanged: (v) => setState(() => _purpose = v),
-              ),
-              RadioListTile<int>(
-                title: const Text('Hobi & minat pribadi'),
                 value: 1,
                 groupValue: _purpose,
                 onChanged: (v) => setState(() => _purpose = v),
               ),
               RadioListTile<int>(
-                title: const Text('Keduanya (tugas dan hobi)'),
+                title: const Text('Hobi & minat pribadi'),
                 value: 2,
                 groupValue: _purpose,
                 onChanged: (v) => setState(() => _purpose = v),
               ),
               RadioListTile<int>(
-                title: const Text('Tidak keduanya'),
+                title: const Text('Keduanya (tugas dan hobi)'),
                 value: 3,
+                groupValue: _purpose,
+                onChanged: (v) => setState(() => _purpose = v),
+              ),
+              RadioListTile<int>(
+                title: const Text(
+                  'Hanya sekedar membaca/tidak ada tujuan khusus',
+                ),
+                value: 0,
                 groupValue: _purpose,
                 onChanged: (v) => setState(() => _purpose = v),
               ),

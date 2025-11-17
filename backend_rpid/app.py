@@ -17,30 +17,31 @@ def predict():
     # Ambil nilai mentah sesuai UI (pastikan UI mengirim sesuai skema)
     q1 = int(data.get('frequency_per_week', 0))        # 0..4
     q2 = int(data.get('minutes_per_day', 0))          # 0..4
-    q3 = int(data.get('enjoyment_scale', 0))         # 0..4
+    q3 = int(data.get('enjoyment_scale', 0))         # 0..4 (API menerima 0..4)
     q4 = int(data.get('has_personal_books', 0))      # 0..1
     q5 = int(data.get('format_preference', 0))       # 0..3
     q6 = int(data.get('genre_variety', 0))           # 0..4
     q7 = int(data.get('purpose', 0))                 # 0..3
     q8 = int(data.get('reading_habit_duration', 0))  # 0..4
-    q9 = int(data.get('discussion_habit', 0))        # 0..3
+    q9 = int(data.get('discussion_habit', 0))        # 0..2 (UI has 3 options: 0,1,2)
     q10 = int(data.get('reading_community', 0))      # 0..3
 
-    # Konversi tiap soal ke skor 0..1 sesuai aturan:
-    s1 = q1 * 0.25                # soal 1 (5 pilihan)
-    s2 = q2 * 0.25                # soal 2 (5 pilihan)
-    s3 = q3 * 0.25                # soal 3 (5 pilihan)
-    s4 = 0.5 + q4 * 0.5           # soal 4 (2 pilihan => 0.5 atau 1.0)
-    s5 = 0.25 + q5 * 0.25         # soal 5 (4 pilihan, terendah 0.25)
-    s6 = q6 * 0.25                # soal 6 (5 pilihan termasuk 0 jenis)
-    s7 = 0.25 + q7 * 0.25         # soal 7 (4 pilihan, terendah 0.25)
-    s8 = q8 * 0.25                # soal 8 (5 pilihan)
-    s9 = 0.25 + q9 * 0.25         # soal 9 (4 pilihan)
-    s10 = 0.25 + q10 * 0.25       # soal 10 (4 pilihan)
+    # Normalisasi tiap soal ke 0..1 menurut maks masing-masing
+    s1 = (q1 / 4.0)           # soal 1 (0..4)
+    s2 = (q2 / 4.0)           # soal 2 (0..4)
+    s3 = (q3 / 4.0)           # soal 3 (0..4)
+    s4 = (q4 / 1.0)           # soal 4 (0..1)
+    s5 = (q5 / 3.0)           # soal 5 (0..3)
+    s6 = (q6 / 4.0)           # soal 6 (0..4)
+    s7 = (q7 / 3.0)           # soal 7 (0..3)
+    s8 = (q8 / 4.0)           # soal 8 (0..4)
+    s9 = (q9 / 2.0)           # soal 9 (0..2)
+    s10 = (q10 / 3.0)         # soal 10 (0..3)
 
-    manual_score = s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8 + s9 + s10  # 0..10
+    # Skala agar total 0..10 (setiap s in 0..1 lalu dikali 1 dan dijumlahkan)
+    manual_score = (s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8 + s9 + s10) * 1.0
 
-    # Level berdasarkan rentang total
+    # Level berdasarkan rentang total 0..10
     if manual_score < 2:
         label = 'Sangat Rendah'
     elif manual_score < 4:

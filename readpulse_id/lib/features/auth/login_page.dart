@@ -53,8 +53,15 @@ class _LoginPageState extends State<LoginPage> {
                   labelText: 'Email',
                   prefixIcon: Icon(Icons.email),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Email wajib diisi' : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Email wajib diisi';
+                  }
+                  if (!value.endsWith('@readpulse.id')) {
+                    return 'Gunakan email @readpulse.id';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -78,10 +85,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Demo: gunakan password 123456',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
             ],
           ),
         ),

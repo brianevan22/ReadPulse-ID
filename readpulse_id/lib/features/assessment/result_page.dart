@@ -9,9 +9,23 @@ class ResultPage extends StatelessWidget {
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
     final level = args?['level'] ?? 'Belum Ada Data';
-    final score = (args?['score'] ?? 0.0) as double;
+    final score = (args?['score'] ?? 0.0) as num;
     final recommendation = args?['recommendation'] ??
         'Belum ada rekomendasi. Silakan isi kuesioner terlebih dahulu.';
+    final double totalScore = score.toDouble(); // 0..10
+    final percent = (totalScore / 10 * 100).toInt();
+    String levelLabel;
+    if (totalScore < 2) {
+      levelLabel = 'Sangat Rendah';
+    } else if (totalScore < 4) {
+      levelLabel = 'Rendah';
+    } else if (totalScore < 6) {
+      levelLabel = 'Sedang';
+    } else if (totalScore < 8) {
+      levelLabel = 'Tinggi';
+    } else {
+      levelLabel = 'Sangat Tinggi';
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Hasil Assessment')),
@@ -25,7 +39,7 @@ class ResultPage extends StatelessWidget {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             Text(
-              '$level (skor: ${(score * 100).toStringAsFixed(1)}%)',
+              '$levelLabel (skor: $percent%)',
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),

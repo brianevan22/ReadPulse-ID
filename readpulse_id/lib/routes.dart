@@ -5,4 +5,5 @@ class AppRoutes {
   static const home = '/home';
   static const questionnaire = '/questionnaire';
   static const result = '/result';
+  static const history = '/history';
 }

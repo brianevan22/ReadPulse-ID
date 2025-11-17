@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:readpulse_id/features/models/reading_response.dart';
 import 'package:readpulse_id/features/services/ai_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class QuestionnairePage extends StatefulWidget {
   const QuestionnairePage({super.key});
@@ -12,42 +14,81 @@ class QuestionnairePage extends StatefulWidget {
 class _QuestionnairePageState extends State<QuestionnairePage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Variabel jawaban user
-  double _frequencyPerWeek = 3;    // 0–7 kali/minggu
-  double _minutesPerDay = 30;      // 0–180 menit/hari
-  double _enjoymentScale = 3;      // 1–5
-  int _hasPersonalBooks = 0;       // 0 = tidak, 1 = ya
-  int _formatPreference = 0;       // 0 = digital, 1 = cetak, 2 = keduanya
-  double _genreVariety = 2;        // 1–5
-  int _purpose = 0;                // 0 = tugas, 1 = hobi, 2 = keduanya
-  int _readingHabitDuration = 0;   // 0 = <6 bln, 1 = 6–12 bln, 2 = >1 tahun
+  // Semua variabel nullable agar bisa dicek apakah sudah diisi
+  int? _frequencyPerWeek;
+  int? _minutesPerDay;
+  int? _enjoymentScale;
+  int? _hasPersonalBooks;
+  int? _formatPreference;
+  int? _genreVariety;
+  int? _purpose;
+  int? _readingHabitDuration;
+  int? _discussionHabit; // NEW
+  int? _readingCommunity; // NEW
 
   bool _isProcessing = false;
   final _aiService = AiService();
 
   Future<void> _process() async {
-    // kalau nanti ada TextFormField, ini bisa dipakai
-    if (!_formKey.currentState!.validate()) return;
+    if (_frequencyPerWeek == null ||
+        _minutesPerDay == null ||
+        _enjoymentScale == null ||
+        _hasPersonalBooks == null ||
+        _formatPreference == null ||
+        _genreVariety == null ||
+        _purpose == null ||
+        _readingHabitDuration == null ||
+        _discussionHabit == null ||
+        _readingCommunity == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Harap diisi semua')),
+      );
+      return;
+    }
+
+    final response = ReadingResponse(
+      frequencyPerWeek: _frequencyPerWeek!, // 0..4
+      minutesPerDay: _minutesPerDay!,       // 0..4
+      enjoymentScale: _enjoymentScale!,     // 0..4
+      hasPersonalBooks: _hasPersonalBooks!, // 0..1
+      formatPreference: _formatPreference!, // 0..3
+      genreVariety: _genreVariety!,         // 0..4
+      purpose: _purpose!,                   // 0..3
+      readingHabitDuration: _readingHabitDuration!, //0..4
+      discussionHabit: _discussionHabit!,   //0..3
+      readingCommunity: _readingCommunity!, //0..3
+    );
 
     setState(() => _isProcessing = true);
-
-    // Bentuk objek response untuk dikirim ke AI
-    final response = ReadingResponse(
-      frequencyPerWeek: _frequencyPerWeek.toInt(),
-      minutesPerDay: _minutesPerDay.toInt(),
-      enjoymentScale: _enjoymentScale.toInt(),
-      hasPersonalBooks: _hasPersonalBooks,
-      formatPreference: _formatPreference,
-      genreVariety: _genreVariety.toInt(),
-      purpose: _purpose,
-      readingHabitDuration: _readingHabitDuration,
-    );
 
     try {
       final result = await _aiService.predictReadingInterest(response);
 
-      if (!mounted) return;
+      // Simpan ke history (simpan semua nilai raw)
+      final prefs = await SharedPreferences.getInstance();
+      final historyString = prefs.getString('reading_history');
+      List<dynamic> history = [];
+      if (historyString != null) history = jsonDecode(historyString);
 
+      history.add({
+        'title': 'Assessment',
+        'date': DateTime.now().toIso8601String().substring(0, 10),
+        'score': result.score, // 0..10
+        'frequencyPerWeek': _frequencyPerWeek,
+        'minutesPerDay': _minutesPerDay,
+        'enjoymentScale': _enjoymentScale,
+        'hasPersonalBooks': _hasPersonalBooks,
+        'formatPreference': _formatPreference,
+        'genreVariety': _genreVariety,
+        'purpose': _purpose,
+        'readingHabitDuration': _readingHabitDuration,
+        'discussionHabit': _discussionHabit,
+        'readingCommunity': _readingCommunity,
+      });
+
+      await prefs.setString('reading_history', jsonEncode(history));
+
+      if (!mounted) return;
       Navigator.pushNamed(
         context,
         '/result',
@@ -64,9 +105,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
@@ -86,26 +125,17 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
               ),
               const SizedBox(height: 16),
 
-              // 1. Berapa kali membaca per minggu
+              // 1. Frekuensi membaca per minggu
               const Text(
                 '1. Dalam 1 minggu, berapa kali kamu membaca (buku/artikel/ebook)?',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              Slider(
-                value: _frequencyPerWeek,
-                min: 0,
-                max: 7,
-                divisions: 7,
-                label: '${_frequencyPerWeek.toInt()} kali/minggu',
+              ...List.generate(5, (i) => RadioListTile<int>(
+                title: Text('$i kali/minggu'),
+                value: i,
+                groupValue: _frequencyPerWeek,
                 onChanged: (v) => setState(() => _frequencyPerWeek = v),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '${_frequencyPerWeek.toInt()} kali/minggu',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ),
+              )),
               const SizedBox(height: 16),
 
               // 2. Menit membaca per hari
@@ -113,43 +143,25 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                 '2. Rata-rata berapa menit per hari kamu membaca?',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              Slider(
-                value: _minutesPerDay,
-                min: 0,
-                max: 180,
-                divisions: 18,
-                label: '${_minutesPerDay.toInt()} menit/hari',
-                onChanged: (v) => setState(() => _minutesPerDay = v),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '${_minutesPerDay.toInt()} menit/hari',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ),
+              ...List.generate(5, (i) => RadioListTile<int>(
+                title: Text('${i * 30} menit/hari'),
+                value: i,
+                groupValue: _minutesPerDay,
+                onChanged: (val) => setState(() => _minutesPerDay = val),
+              )),
               const SizedBox(height: 16),
 
               // 3. Seberapa menikmati membaca
               const Text(
-                '3. Seberapa kamu menikmati aktivitas membaca? (1 = tidak suka, 5 = sangat suka)',
+                '3. Seberapa kamu menikmati aktivitas membaca?',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              Slider(
-                value: _enjoymentScale,
-                min: 1,
-                max: 5,
-                divisions: 4,
-                label: _enjoymentScale.toInt().toString(),
+              ...List.generate(5, (i) => RadioListTile<int>(
+                title: Text('${i + 1} (${_enjoymentLabel(i + 1)})'),
+                value: i + 1,
+                groupValue: _enjoymentScale,
                 onChanged: (v) => setState(() => _enjoymentScale = v),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'Skor: ${_enjoymentScale.toInt()}',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ),
+              )),
               const SizedBox(height: 16),
 
               // 4. Punya koleksi buku?
@@ -157,27 +169,17 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                 '4. Apakah kamu punya koleksi buku sendiri di rumah?',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<int>(
-                      title: const Text('Tidak'),
-                      value: 0,
-                      groupValue: _hasPersonalBooks,
-                      onChanged: (v) =>
-                          setState(() => _hasPersonalBooks = v ?? 0),
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<int>(
-                      title: const Text('Ya'),
-                      value: 1,
-                      groupValue: _hasPersonalBooks,
-                      onChanged: (v) =>
-                          setState(() => _hasPersonalBooks = v ?? 1),
-                    ),
-                  ),
-                ],
+              RadioListTile<int>(
+                title: const Text('Tidak'),
+                value: 0,
+                groupValue: _hasPersonalBooks,
+                onChanged: (v) => setState(() => _hasPersonalBooks = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Ya'),
+                value: 1,
+                groupValue: _hasPersonalBooks,
+                onChanged: (v) => setState(() => _hasPersonalBooks = v),
               ),
               const SizedBox(height: 16),
 
@@ -186,48 +188,43 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                 '5. Kamu lebih suka membaca format apa?',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                value: _formatPreference,
-                items: const [
-                  DropdownMenuItem(
-                    value: 0,
-                    child: Text('Digital (HP/Tablet/Komputer)'),
-                  ),
-                  DropdownMenuItem(
-                    value: 1,
-                    child: Text('Cetak (buku/majalah fisik)'),
-                  ),
-                  DropdownMenuItem(
-                    value: 2,
-                    child: Text('Keduanya sama-sama suka'),
-                  ),
-                ],
-                onChanged: (v) => setState(() => _formatPreference = v ?? 0),
+              RadioListTile<int>(
+                title: const Text('Digital (HP/Tablet/Komputer)'),
+                value: 0,
+                groupValue: _formatPreference,
+                onChanged: (v) => setState(() => _formatPreference = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Cetak (buku/majalah fisik)'),
+                value: 1,
+                groupValue: _formatPreference,
+                onChanged: (v) => setState(() => _formatPreference = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Keduanya sama-sama suka'),
+                value: 2,
+                groupValue: _formatPreference,
+                onChanged: (v) => setState(() => _formatPreference = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Tidak suka keduanya'),
+                value: 3,
+                groupValue: _formatPreference,
+                onChanged: (v) => setState(() => _formatPreference = v),
               ),
               const SizedBox(height: 16),
 
               // 6. Variasi jenis bacaan
               const Text(
-                '6. Kira-kira ada berapa banyak variasi jenis bacaan yang biasa kamu baca? '
-                '(misalnya: komik, novel, non-fiksi, berita, artikel, dsb.)',
+                '6. Kira-kira ada berapa banyak variasi jenis bacaan yang biasa kamu baca? (misal: komik, novel, non-fiksi, berita, artikel, dsb.)',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              Slider(
-                value: _genreVariety,
-                min: 1,
-                max: 5,
-                divisions: 4,
-                label: _genreVariety.toInt().toString(),
+              ...List.generate(5, (i) => RadioListTile<int>(
+                title: Text(i == 0 ? '0 jenis bacaan (tidak pernah)' : '$i jenis bacaan'),
+                value: i,
+                groupValue: _genreVariety,
                 onChanged: (v) => setState(() => _genreVariety = v),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '${_genreVariety.toInt()} jenis bacaan',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ),
+              )),
               const SizedBox(height: 16),
 
               // 7. Tujuan utama membaca
@@ -235,24 +232,29 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                 '7. Kamu lebih sering membaca untuk apa?',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                value: _purpose,
-                items: const [
-                  DropdownMenuItem(
-                    value: 0,
-                    child: Text('Tugas/sekolah/kuliah/kerja'),
-                  ),
-                  DropdownMenuItem(
-                    value: 1,
-                    child: Text('Hobi & minat pribadi'),
-                  ),
-                  DropdownMenuItem(
-                    value: 2,
-                    child: Text('Keduanya (tugas dan hobi)'),
-                  ),
-                ],
-                onChanged: (v) => setState(() => _purpose = v ?? 0),
+              RadioListTile<int>(
+                title: const Text('Tugas/sekolah/kuliah/kerja'),
+                value: 0,
+                groupValue: _purpose,
+                onChanged: (v) => setState(() => _purpose = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Hobi & minat pribadi'),
+                value: 1,
+                groupValue: _purpose,
+                onChanged: (v) => setState(() => _purpose = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Keduanya (tugas dan hobi)'),
+                value: 2,
+                groupValue: _purpose,
+                onChanged: (v) => setState(() => _purpose = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Tidak keduanya'),
+                value: 3,
+                groupValue: _purpose,
+                onChanged: (v) => setState(() => _purpose = v),
               ),
               const SizedBox(height: 16),
 
@@ -261,25 +263,91 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                 '8. Sudah berapa lama kamu punya kebiasaan membaca rutin?',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                value: _readingHabitDuration,
-                items: const [
-                  DropdownMenuItem(
-                    value: 0,
-                    child: Text('Kurang dari 6 bulan'),
-                  ),
-                  DropdownMenuItem(
-                    value: 1,
-                    child: Text('6–12 bulan'),
-                  ),
-                  DropdownMenuItem(
-                    value: 2,
-                    child: Text('Lebih dari 1 tahun'),
-                  ),
-                ],
-                onChanged: (v) =>
-                    setState(() => _readingHabitDuration = v ?? 0),
+              RadioListTile<int>(
+                title: const Text('0-1 bulan'),
+                value: 0,
+                groupValue: _readingHabitDuration,
+                onChanged: (v) => setState(() => _readingHabitDuration = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('1-3 bulan'),
+                value: 1,
+                groupValue: _readingHabitDuration,
+                onChanged: (v) => setState(() => _readingHabitDuration = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('3-6 bulan'),
+                value: 2,
+                groupValue: _readingHabitDuration,
+                onChanged: (v) => setState(() => _readingHabitDuration = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('6-12 bulan'),
+                value: 3,
+                groupValue: _readingHabitDuration,
+                onChanged: (v) => setState(() => _readingHabitDuration = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Lebih dari 1 tahun'),
+                value: 4,
+                groupValue: _readingHabitDuration,
+                onChanged: (v) => setState(() => _readingHabitDuration = v),
+              ),
+              const SizedBox(height: 16),
+
+              // 9. Kebiasaan diskusi bacaan
+              const Text(
+                '9. Seberapa sering kamu berdiskusi tentang bacaan dengan orang lain?',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              RadioListTile<int>(
+                title: const Text('Tidak Pernah'),
+                value: 0,
+                groupValue: _discussionHabit,
+                onChanged: (v) => setState(() => _discussionHabit = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Jarang'),
+                value: 1,
+                groupValue: _discussionHabit,
+                onChanged: (v) => setState(() => _discussionHabit = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Sering'),
+                value: 2,
+                groupValue: _discussionHabit,
+                onChanged: (v) => setState(() => _discussionHabit = v),
+              ),
+              const SizedBox(height: 16),
+
+              // 10. Keaktifan di komunitas membaca
+              const Text(
+                '10. Apakah kamu aktif mengikuti komunitas membaca (online/offline)?',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              RadioListTile<int>(
+                title: const Text('Tidak mengikuti komunitas'),
+                value: 0,
+                groupValue: _readingCommunity,
+                onChanged: (v) => setState(() => _readingCommunity = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Hanya mengikuti tetapi tidak aktif'),
+                value: 1,
+                groupValue: _readingCommunity,
+                onChanged: (v) => setState(() => _readingCommunity = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Jarang aktif'),
+                value: 2,
+                groupValue: _readingCommunity,
+                onChanged: (v) => setState(() => _readingCommunity = v),
+              ),
+              RadioListTile<int>(
+                title: const Text('Sangat aktif'),
+                value: 3,
+                groupValue: _readingCommunity,
+                onChanged: (v) => setState(() => _readingCommunity = v),
               ),
               const SizedBox(height: 24),
 
@@ -301,5 +369,22 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
         ),
       ),
     );
+  }
+
+  String _enjoymentLabel(int value) {
+    switch (value) {
+      case 1:
+        return 'Tidak suka';
+      case 2:
+        return 'Kurang suka';
+      case 3:
+        return 'Biasa saja';
+      case 4:
+        return 'Suka';
+      case 5:
+        return 'Sangat suka';
+      default:
+        return '';
+    }
   }
 }

@@ -47,9 +47,9 @@ class HomePage extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: () {
-                  // nanti untuk riwayat
+                  Navigator.pushNamed(context, '/history');
                 },
-                child: const Text('Lihat Riwayat (Coming Soon)'),
+                child: const Text('Lihat Riwayat'),
               ),
             ),
           ],

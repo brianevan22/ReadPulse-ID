@@ -44,11 +44,9 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
         _readingHabitDuration == null ||
         _discussionHabit == null ||
         _readingCommunity == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Harap diisi semua (termasuk nama assessment)'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Harap diisi semua')));
       return;
     }
 
@@ -152,7 +150,7 @@ class _QuestionnairePageState extends State<QuestionnairePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Nama Assessment',
+                    'I. Nama Assessment',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
